@@ -22,14 +22,21 @@ namespace repoman {
     return 0;
   }
 
-  Repository::Repository(const std::string &path, const std::string &url) :
-    path(path), url(url) {
+  Repository::Repository(const std::string &path) :
+    path(path) {
     Git_Manager::ensure_initialized();
-    check_error(git_repository_init(&id, path.c_str(), false), "initializing repo");
   }
 
   Repository::~Repository() {
     git_repository_free(id);
+  }
+
+  void Repository::initialize() {
+    check_error(git_repository_init(&id, path.c_str(), false), "initializing repo");
+  }
+
+  void Repository::clone(const std::string &url) {
+    check_error(git_clone(&id, url.c_str(), path.c_str(), nullptr), "clone repo");
   }
 
   void Repository::add_all() {

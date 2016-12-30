@@ -13,17 +13,20 @@ namespace repoman {
   class Repository {
       git_repository *id = nullptr;
       std::string path;
-      std::string url;
       std::unique_ptr<Tree> current_tree;
 
   public:
-      Repository(const std::string &path, const std::string &url = "");
+      Repository(const std::string &path);
       ~Repository();
-      void add_all();
-      void commit(const std::string &message);
 
       git_repository *get_id() const {
         return id;
       }
+
+      void initialize();
+      void clone(const std::string &url);
+      void add_all();
+      void commit(const std::string &message);
+
   };
 }
