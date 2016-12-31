@@ -7,6 +7,7 @@
 #include "Index.h"
 #include "Commit.h"
 #include "Object.h"
+#include "Tag.h"
 
 using namespace std;
 
@@ -130,5 +131,30 @@ namespace repoman {
       "Released 10/5/11", /* message */
       false             /* force? */
     ), "create tag");
+  }
+
+  struct tag_search_data {
+      string tag_name;
+      git_oid *target;
+  };
+
+  int find_tag_callback(const char *name, git_oid *target, void *payload) {
+    tag_search_data *data = (tag_search_data *) payload;
+    if (name == data->tag_name) {
+      data->target = target;
+      return 1;
+    }
+    return 0;
+  }
+
+  Tag Repository::find_tag(const std::string tag_name) {
+    tag_search_data data;
+    data.tag_name = tag_name;
+    check_error(git_tag_foreach(id, find_tag_callback, &data), "find a tag");
+    return Tag(*this, data.target);
+  }
+
+  void Repository::checkout(Tag &tag) {
+
   }
 }

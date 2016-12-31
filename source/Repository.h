@@ -15,6 +15,8 @@ namespace repoman {
 
   class Commit;
 
+  class Tag;
+
   using Status_Delegate = std::function<void(const std::string &path, unsigned int flags)>;
 
   class Repository {
@@ -40,5 +42,7 @@ namespace repoman {
       void commit(const std::string &message);
       void enumerate_status(const Status_Delegate &delegate);
       void tag_last_commit(const std::string &label);
+      void checkout(Tag &tag);
+      Tag find_tag(const std::string tag_name)
   };
 }
