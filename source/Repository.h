@@ -11,12 +11,19 @@ namespace repoman {
 
   class User;
 
+  class Object;
+
+  class Commit;
+
   using Status_Delegate = std::function<void(const std::string &path, unsigned int flags)>;
 
   class Repository {
       git_repository *id = nullptr;
       std::string path;
       std::unique_ptr<Tree> current_tree;
+
+      Object get_commit_object(const std::string &pattern);
+      Object get_last_commit_object();
 
   public:
       Repository(const std::string &path);
@@ -32,5 +39,6 @@ namespace repoman {
       void add_all();
       void commit(const std::string &message);
       void enumerate_status(const Status_Delegate &delegate);
+      void tag_last_commit(const std::string &label);
   };
 }

@@ -5,6 +5,8 @@
 #include "User.h"
 #include "Signature.h"
 #include "Index.h"
+#include "Commit.h"
+#include "Object.h"
 
 using namespace std;
 
@@ -61,24 +63,46 @@ namespace repoman {
     current_tree = unique_ptr<Tree>(new Tree(index));
   }
 
+  Object Repository::get_commit_object(const std::string &pattern) {
+    git_object *object_id = NULL;
+    auto result = git_revparse_single(&object_id, id, pattern.c_str());
+    Object object(object_id);
+    if (result == GIT_ENOTFOUND) {
+      return Object();
+    }
+    else if (result != 0) {
+      throw std::runtime_error("Git Error: retrieving commit.");
+    }
+
+    return object;
+  }
+
+  Object Repository::get_last_commit_object() {
+    return get_commit_object("HEAD^{commit}");
+  }
+
   void Repository::commit(const std::string &message) {
     auto signature = Signature(*this);
-    auto signature_id = signature.get_id();
 
-//    const git_commit *parents[] = {parent1, parent2};
+    auto last_commit_object = get_last_commit_object();
+    Commit last_commit(*this, last_commit_object);
+
+    const git_commit *parents = last_commit_object.get_id()
+                                ? last_commit.get_id()
+                                : nullptr;
 
     git_oid new_commit_id = {0};
     check_error(git_commit_create(
       &new_commit_id,
       id,
       "HEAD",                      /* name of ref to update */
-      signature_id,                          /* author */
-      signature_id,                          /* committer */
+      signature.get_id(),                          /* author */
+      signature.get_id(),                          /* committer */
       "UTF-8",                     /* message encoding */
       message.c_str(),  /* message */
       current_tree->get_id(),                        /* root tree */
-      0,                           /* parent count */
-      nullptr), "create commit");                    /* parents */
+      last_commit.get_id() ? 1 : 0,                           /* parent count */
+      &parents), "create commit");                    /* parents */
   }
 
   int status_callback(const char *path, unsigned int flags, void *payload) {
@@ -90,5 +114,21 @@ namespace repoman {
   void Repository::enumerate_status(const Status_Delegate &delegate) {
     check_error(git_status_foreach(id, status_callback, const_cast<Status_Delegate *>(&delegate)),
                 "enumerate repo status");
+  }
+
+  void Repository::tag_last_commit(const std::string &label) {
+    auto last_commit = get_last_commit_object();
+    git_oid object_id = {0};
+    Signature signature(*this);
+
+    check_error(git_tag_create(
+      &object_id,               /* new object id */
+      id,               /* repo */
+      label.c_str(),           /* name */
+      last_commit.get_id(),             /* target */
+      signature.get_id(),             /* name/email/timestamp */
+      "Released 10/5/11", /* message */
+      false             /* force? */
+    ), "create tag");
   }
 }
