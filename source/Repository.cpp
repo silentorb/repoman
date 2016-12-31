@@ -39,6 +39,10 @@ namespace repoman {
     check_error(git_clone(&id, url.c_str(), path.c_str(), nullptr), "clone repo");
   }
 
+  void Repository::open() {
+    check_error(git_repository_open(&id, path.c_str()), "open repo");
+  }
+
   void Repository::add_all() {
 //    git_index *index = nullptr;
 
@@ -77,4 +81,14 @@ namespace repoman {
       nullptr), "create commit");                    /* parents */
   }
 
+  int status_callback(const char *path, unsigned int flags, void *payload) {
+    const Status_Delegate &delegate = *static_cast<Status_Delegate *>(payload);
+    delegate(path, flags);
+    return 0;
+  }
+
+  void Repository::enumerate_status(const Status_Delegate &delegate) {
+    check_error(git_status_foreach(id, status_callback, const_cast<Status_Delegate *>(&delegate)),
+                "enumerate repo status");
+  }
 }
