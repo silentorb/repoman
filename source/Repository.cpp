@@ -1,4 +1,5 @@
 #include <git2.h>
+#include <cstring>
 #include "Repository.h"
 #include "Git_Manager.h"
 #include "utility.h"
@@ -136,25 +137,49 @@ namespace repoman {
   struct tag_search_data {
       string tag_name;
       git_oid *target;
+      Repository *repo;;
   };
 
-  int find_tag_callback(const char *name, git_oid *target, void *payload) {
-    tag_search_data *data = (tag_search_data *) payload;
-    if (name == data->tag_name) {
-      data->target = target;
-      return 1;
-    }
-    return 0;
+//  int find_tag_callback(const char *name, git_oid *target, void *payload) {
+//    tag_search_data *data = (tag_search_data *) payload;
+//    constexpr unsigned int offset = strlen ("refs/tags/");
+//    if (std::string(name).substr(offset) == data->tag_name) {
+//      data->target = target;
+//      Tag tag(*data->repo, target);
+//      return 1;
+//    }
+//    return 0;
+//  }
+
+  Tag Repository::get_tag(const std::string tag_name) {
+//    tag_search_data data;
+//    data.tag_name = tag_name;
+//    data.repo = this;
+//    git_oid tag_id;
+//    check_error(git_reference_name_to_id(&tag_id, id, ("refs/tags/" + tag_name).c_str()), "lookup tag id");
+////    check_error(git_tag_foreach(id, find_tag_callback, &data), "find a tag");
+//    git_tree *tree;
+//    int error = git_tree_lookup(&tree, id, &tag_id);
+//    git_commit *id2 = nullptr;
+//    check_error(git_commit_lookup(&id2, get_id(), &tag_id), "lookup commit");
+
+    git_reference *ref;
+    check_error(git_reference_lookup(&ref, id, ("refs/tags/" + tag_name).c_str()), "lookup reference");
+    git_tag *tag_id;
+    check_error(git_reference_peel((git_object **) &tag_id, ref, GIT_OBJ_TAG), "lookup tag");
+    return Tag(tag_id);
   }
 
-  Tag Repository::find_tag(const std::string tag_name) {
-    tag_search_data data;
-    data.tag_name = tag_name;
-    check_error(git_tag_foreach(id, find_tag_callback, &data), "find a tag");
-    return Tag(*this, data.target);
-  }
+  void Repository::checkout(const Tag &tag) {
+//    git_oid tag_id;
+//    check_error(git_reference_name_to_id(&tag_id, id, ("refs/tags/" + tag_name).c_str()), "lookup tag id");
+//    Tag tag(*this, &tag_id);
 
-  void Repository::checkout(Tag &tag) {
+    git_checkout_options options = GIT_CHECKOUT_OPTIONS_INIT;
+    options.checkout_strategy = GIT_CHECKOUT_SAFE;
+    check_error(git_checkout_tree(id, (git_object *) tag.get_id(), &options), "checkout tag");
 
+    auto commit_id = git_tag_target_id(tag.get_id());
+    git_repository_set_head_detached(id, commit_id);
   }
 }

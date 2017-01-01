@@ -42,7 +42,7 @@ namespace repoman {
       void commit(const std::string &message);
       void enumerate_status(const Status_Delegate &delegate);
       void tag_last_commit(const std::string &label);
-      void checkout(Tag &tag);
-      Tag find_tag(const std::string tag_name)
+      void checkout(const Tag &tag);
+      Tag get_tag(const std::string tag_name);
   };
 }
