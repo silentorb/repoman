@@ -137,7 +137,7 @@ namespace repoman {
   struct tag_search_data {
       string tag_name;
       git_oid *target;
-      Repository *repo;;
+      Repository *repo;
   };
 
 //  int find_tag_callback(const char *name, git_oid *target, void *payload) {
